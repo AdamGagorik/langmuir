@@ -16,33 +16,53 @@ OpenClHelper::OpenClHelper(World &world, QObject *parent):
 
 void OpenClHelper::initializeOpenCL(int gpuID)
 {
+    qDebug("langmuir: initializing OpenCL");
+
     //can't use openCL yet
     m_world.parameters().okCL = false;
 
 #ifdef LANGMUIR_OPEN_CL
     try
-    {   
+    {
         //obtain platforms
         std::vector<cl::Platform> platforms;
         cl::Platform::get(&platforms);
+
+        //debug platforms
+        for(int i = 0; i < platforms.size(); i++) {
+            qDebug("langmuir: %-30s=  %i", "CL_PLATFORM_ID", i);
+            cl::Platform platform = platforms.at(i);
+            showPlatformInfo<std::string>(platform, CL_PLATFORM_NAME, "CL_PLATFORM_NAME");
+            showPlatformInfo<std::string>(platform, CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR");
+            showPlatformInfo<std::string>(platform, CL_PLATFORM_VERSION, "CL_PLATFORM_VERSION");
+        }
+
+        //choose first platform
         m_platform = platforms.at(0);
 
         //obtain all devices
         std::vector<cl::Device> all_devices;
         m_platform.getDevices(CL_DEVICE_TYPE_GPU, &all_devices);
 
-        //choose a single device
-        if (gpuID < 0) {
-            gpuID = 0;
+        //debug devices
+        for(int i = 0; i < platforms.size(); i++) {
+            qDebug("langmuir: %-30s=  %i", "CL_DEVICE_ID", i);
+            cl::Device device = all_devices.at(i);
+            showDeviceInfo<std::string>(device, CL_DEVICE_NAME, "CL_DEVICE_NAME");
+            showDeviceInfo<std::string>(device, CL_DRIVER_VERSION, "CL_DRIVER_VERSION");
         }
-        if (gpuID >= all_devices.size()) {
-            qFatal("langmuir: invalid gpu: %d (max gpus=%d)", gpuID, int(all_devices.size()));
+
+        //choose a single device
+        if (gpuID < 0 || gpuID >= all_devices.size()) {
+            gpuID = 0;
+            qDebug("langmuir: invalid gpu: %d (max gpus=%d)", gpuID, int(all_devices.size()));
+            qDebug("langmuir: setting gpuID to 0");
         }
         std::vector<cl::Device> devices;
         devices.push_back(all_devices.at(gpuID));
         m_device = devices.at(0);
 
-        qDebug("langmuir: gpuID=%d", gpuID);
+        qDebug("langmuir: %-30s=  %i", "gpuID", gpuID);
 
         //save gpu id used
         m_world.parameters().openclDeviceID = gpuID;
